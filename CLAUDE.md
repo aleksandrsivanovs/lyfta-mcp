@@ -1,9 +1,7 @@
 # CLAUDE.md — fork of jkronlachner/lyfta-mcp
 
-This is Aleks's fork (`aleksandrsivanovs/lyfta-mcp`) of an MCP server for the Lyfta Community API.
-It runs in Docker on a home Ubuntu Mac mini (192.168.1.11, container `lyfta-mcp-aleks`,
-port 4100 → 3000, Streamable HTTP) and is used by Claude Desktop through `mcp-remote` as a
-fitness-coaching data source.
+This is Aleks's fork (`aleksandrsivanovs/lyfta-mcp`) of an MCP server for the Lyfta Community API,
+used as a fitness-coaching data source.
 
 ## Current task: add the missing read endpoints
 
@@ -73,22 +71,6 @@ npm test && npm run typecheck && npm run build
 All green, README "Tools" table updated with the six new tools and the new params,
 one Conventional Commit per logical change (`feat: add collections/templates read tools`, …).
 Do not bump the version manually (release-please handles upstream; see below).
-
-## Deploying the fork on the Mac mini
-
-The running container uses the upstream image. To run this fork instead, on the Mac mini:
-
-```bash
-cd ~/Documents && git clone https://github.com/aleksandrsivanovs/lyfta-mcp.git lyfta-mcp-src
-```
-Then in `~/Documents/lyfta-mcp-aleks/docker-compose.yml` replace the `image:` line with:
-```yaml
-    build: ../lyfta-mcp-src
-    image: lyfta-mcp-aleks:local
-```
-and run `docker compose build && sudo systemctl restart lyfta-mcp-aleks`.
-Verify: `curl -s http://192.168.1.11:4100/healthz` → `{"ok":true}`, then restart Claude
-Desktop so `mcp-remote` re-lists the tools.
 
 ## Upstreaming
 
