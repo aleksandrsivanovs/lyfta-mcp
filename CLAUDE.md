@@ -100,3 +100,6 @@ from a feature branch (keep `main` in sync with upstream).
 - Never log, print, commit, or echo a Lyfta API key. `.env*` is git-ignored — keep it that way.
 - Live API calls only via `npm run smoke` with a key the user provides in their own shell.
 - Don't add write tools beyond the existing two.
+- Never commit straight to `main`. Work on a feature branch and open a PR against
+  `aleksandrsivanovs/lyfta-mcp`. Never merge a PR yourself — only Aleks merges, or approves
+  a merge explicitly.
