@@ -311,7 +311,7 @@ export function createServer(): McpServer {
       inputSchema: {
         collectionId: z.string(),
         workout: workoutSchema,
-        clientId: z.string().optional().describe("coach only"),
+        clientId: clientIdSchema(),
       },
     },
     async ({ collectionId, workout, clientId }) =>

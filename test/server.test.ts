@@ -381,12 +381,16 @@ describe("server tools", () => {
   it("tells the LLM where every client_id comes from", async () => {
     const client = await connect();
     const { tools } = await client.listTools();
-    const withClientId = tools.filter((t) => (t.inputSchema.properties as any)?.client_id);
-    expect(withClientId.length).toBeGreaterThanOrEqual(10);
-    for (const t of withClientId) {
-      expect((t.inputSchema.properties as any).client_id.description, t.name).toContain(
-        "list_clients",
-      );
+    const clientIdFields = tools.flatMap((t) => {
+      const props = (t.inputSchema.properties ?? {}) as Record<string, any>;
+      return ["client_id", "clientId"]
+        .filter((key) => props[key])
+        .map((key) => ({ name: `${t.name}.${key}`, field: props[key] }));
+    });
+    expect(clientIdFields.map((f) => f.name)).toContain("create_template.clientId");
+    expect(clientIdFields.length).toBeGreaterThanOrEqual(11);
+    for (const { name, field } of clientIdFields) {
+      expect(field.description, name).toContain("list_clients");
     }
   });
 
