@@ -400,4 +400,77 @@ describe("server tools", () => {
     await client.callTool({ name: "list_exercises", arguments: { client_id: "" } });
     expect(fetchedUrl(fetchFn)).toBe("https://my.lyfta.app/api/v1/exercises");
   });
+
+  /** The method, URL and parsed JSON body of the single request sent to Lyfta. */
+  function sent(fn: ReturnType<typeof stubFetch>) {
+    const [url, init] = fn.mock.calls[0] as unknown as [URL, RequestInit];
+    return { method: init.method, url: String(url), body: JSON.parse(init.body as string) };
+  }
+
+  it("create_collection POSTs the collection wrapper and client_id", async () => {
+    const fetchFn = stubFetch({ status: true, id: "9" });
+    const client = await connect();
+    const res: any = await client.callTool({
+      name: "create_collection",
+      arguments: { title: "Block 1", goal: "strength", client_id: "c1" },
+    });
+    expect(res.isError).toBeFalsy();
+    expect(sent(fetchFn)).toEqual({
+      method: "POST",
+      url: "https://my.lyfta.app/api/v1/collections",
+      body: { collection: { title: "Block 1", goal: "strength" }, client_id: "c1" },
+    });
+  });
+
+  it.each([undefined, ""])("create_collection drops client_id %j", async (client_id) => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    await client.callTool({ name: "create_collection", arguments: { title: "A", client_id } });
+    expect(sent(fetchFn).body).toEqual({ collection: { title: "A" } });
+  });
+
+  it("create_template POSTs collectionId, workout and clientId as given", async () => {
+    const fetchFn = stubFetch({ status: true, id: "3" });
+    const client = await connect();
+    const workout = {
+      title: "Push",
+      exercises: [{ exercise_id: 1, sets: [{ reps: "8", weight: 60 }] }],
+    };
+    await client.callTool({
+      name: "create_template",
+      arguments: { collectionId: "9", workout, clientId: "c1" },
+    });
+    expect(sent(fetchFn)).toEqual({
+      method: "POST",
+      url: "https://my.lyfta.app/api/v1/templates",
+      body: { collectionId: "9", workout, clientId: "c1" },
+    });
+  });
+
+  it.each([undefined, ""])(
+    "create_template defaults exercises to [] and drops clientId %j",
+    async (clientId) => {
+      const fetchFn = stubFetch();
+      const client = await connect();
+      await client.callTool({
+        name: "create_template",
+        arguments: { collectionId: "9", workout: { title: "Rest" }, clientId },
+      });
+      expect(sent(fetchFn).body).toEqual({
+        collectionId: "9",
+        workout: { title: "Rest", exercises: [] },
+      });
+    },
+  );
+
+  it.each([
+    ["create_collection", { title: "" }],
+    ["create_template", { collectionId: "9", workout: { exercises: [] } }],
+  ])("%s rejects a missing title without calling fetch", async (name, args) => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    const res: any = await client.callTool({ name, arguments: args });
+    expect(res.isError).toBe(true);
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
 });
