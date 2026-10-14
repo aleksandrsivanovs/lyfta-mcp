@@ -38,7 +38,7 @@ describe("server tools", () => {
     globalThis.fetch = realFetch;
   });
 
-  it("exposes all 11 tools", async () => {
+  it("exposes all 13 tools", async () => {
     const client = await connect();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
@@ -47,6 +47,7 @@ describe("server tools", () => {
       "create_template",
       "get_collection",
       "get_exercise_progress",
+      "get_schedule",
       "get_template",
       "list_clients",
       "list_collections",
@@ -54,7 +55,18 @@ describe("server tools", () => {
       "list_templates",
       "list_workout_summaries",
       "list_workouts",
+      "search_exercise_library",
     ]);
+  });
+
+  // create_template's pre-existing nested schema reuses zod instances, so it is
+  // excluded; the read tools must stay flat for clients that don't resolve $ref.
+  it("emits self-contained input schemas (no $ref) for read tools", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    for (const t of tools.filter((t) => !t.name.startsWith("create_"))) {
+      expect(JSON.stringify(t.inputSchema), t.name).not.toContain("$ref");
+    }
   });
 
   it("reports the package.json version", async () => {
@@ -159,5 +171,88 @@ describe("server tools", () => {
     expect(String((fetchFn.mock.calls[1] as unknown[])[0])).toBe(
       "https://my.lyfta.app/api/v1/templates?client_id=c1",
     );
+  });
+
+  it("get_schedule forwards dates, flag and client_id", async () => {
+    const fetchFn = stubFetch({ status: true, workouts: [] });
+    const client = await connect();
+    const res: any = await client.callTool({
+      name: "get_schedule",
+      arguments: { from: "2026-09-01", to: "2026-09-01", include_completed: true, client_id: "c1" },
+    });
+    expect(res.isError).toBeFalsy();
+    expect(fetchedUrl(fetchFn)).toBe(
+      "https://my.lyfta.app/api/v1/schedule?from=2026-09-01&to=2026-09-01&client_id=c1&include_completed=true",
+    );
+  });
+
+  it("get_schedule omits include_completed when false", async () => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    await client.callTool({ name: "get_schedule", arguments: { include_completed: false } });
+    expect(fetchedUrl(fetchFn)).toBe("https://my.lyfta.app/api/v1/schedule");
+  });
+
+  it.each(["2026-9-1", "01-09-2026", "2026-09-01T00:00:00Z", "2026-02-30", "2026-13-01"])(
+    "get_schedule rejects invalid date %s without calling fetch",
+    async (from) => {
+      const fetchFn = stubFetch();
+      const client = await connect();
+      const res: any = await client.callTool({ name: "get_schedule", arguments: { from } });
+      expect(res.isError).toBe(true);
+      expect(res.content[0].text).toMatch(/YYYY-MM-DD|calendar day/);
+      expect(fetchFn).not.toHaveBeenCalled();
+    },
+  );
+
+  it("get_schedule accepts a leap day", async () => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    const res: any = await client.callTool({
+      name: "get_schedule",
+      arguments: { from: "2028-02-29" },
+    });
+    expect(res.isError).toBeFalsy();
+    expect(fetchFn).toHaveBeenCalledOnce();
+  });
+
+  it("get_schedule rejects from > to without calling fetch", async () => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    const res: any = await client.callTool({
+      name: "get_schedule",
+      arguments: { from: "2026-09-08", to: "2026-09-01" },
+    });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("must not be after");
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("search_exercise_library forwards params and passes the nested envelope through", async () => {
+    const body = {
+      status: true,
+      data: {
+        results: [{ id: 1, name: "Bench Press" }],
+        pagination: { limit: 1, offset: 0, total: 9, hasMore: true },
+      },
+    };
+    const fetchFn = stubFetch(body);
+    const client = await connect();
+    const res: any = await client.callTool({
+      name: "search_exercise_library",
+      arguments: { search: "bench", limit: 1, offset: 0 },
+    });
+    expect(fetchedUrl(fetchFn)).toBe(
+      "https://my.lyfta.app/api/v1/exercises/library?search=bench&limit=1&offset=0",
+    );
+    expect(JSON.parse(res.content[0].text)).toEqual(body);
+  });
+
+  it("search_exercise_library surfaces status:false as isError", async () => {
+    stubFetch({ status: false, message: "library down" });
+    const client = await connect();
+    const res: any = await client.callTool({ name: "search_exercise_library", arguments: {} });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("library down");
   });
 });

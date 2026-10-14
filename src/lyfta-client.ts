@@ -141,6 +141,21 @@ export class LyftaClient {
     return this.request("GET", `/api/v1/templates/${pathSegment(id)}`, { query: q });
   }
 
+  getSchedule(
+    q: { from?: string; to?: string; include_completed?: boolean; client_id?: string } = {},
+  ) {
+    // Only send the flag when set: Lyfta defaults to false, and "false" in a
+    // query string is easy for a server to misread as truthy.
+    const { include_completed, ...rest } = q;
+    return this.request("GET", "/api/v1/schedule", {
+      query: { ...rest, include_completed: include_completed ? "true" : undefined },
+    });
+  }
+
+  searchExerciseLibrary(q: { search?: string; limit?: number; offset?: number } = {}) {
+    return this.request("GET", "/api/v1/exercises/library", { query: q });
+  }
+
   listClients() {
     return this.request("GET", "/api/v1/clients");
   }

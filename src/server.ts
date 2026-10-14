@@ -32,6 +32,34 @@ async function runTool(fn: (c: LyftaClient) => Promise<unknown>): Promise<ToolRe
   }
 }
 
+/** True when a YYYY-MM-DD string names a real calendar day (rejects 2026-02-30). */
+function isCalendarDate(s: string): boolean {
+  const d = new Date(`${s}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+
+// A factory, not a shared constant: reusing one zod instance makes the JSON
+// Schema emit "$ref" for the second field, which some MCP clients mishandle.
+const dateSchema = () =>
+  z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
+    .refine(isCalendarDate, "Date is not a real calendar day");
+
+/**
+ * Lyfta answers from > to with a 400; catch it here to save a request.
+ * inputSchema is a raw shape, so this cross-field check can't live in zod.
+ */
+function rangeError(from?: string, to?: string): ToolResult | undefined {
+  if (from && to && from > to) {
+    return {
+      content: [{ type: "text", text: `"from" (${from}) must not be after "to" (${to})` }],
+      isError: true,
+    };
+  }
+  return undefined;
+}
+
 const numStr = z.union([z.string(), z.number()]);
 
 const setSchema = z
@@ -180,6 +208,38 @@ export function createServer(): McpServer {
       },
     },
     async ({ id, client_id }) => runTool((c) => c.getTemplate(id, { client_id })),
+  );
+
+  server.registerTool(
+    "get_schedule",
+    {
+      title: "Get planned schedule",
+      description: `Workouts planned on the user's calendar (template_id, scheduled_date/time, status). Use for "what's planned this week"; pass a template_id to get_template for its exercises. from/to are YYYY-MM-DD, UTC, inclusive. Completed entries are excluded unless include_completed is true. ${RATE}`,
+      inputSchema: {
+        from: dateSchema().optional().describe("Start date YYYY-MM-DD (UTC, inclusive)"),
+        to: dateSchema().optional().describe("End date YYYY-MM-DD (UTC, inclusive)"),
+        include_completed: z.boolean().optional().describe("Also return completed entries"),
+        client_id: z.string().optional().describe("coach only"),
+      },
+    },
+    async ({ from, to, include_completed, client_id }) =>
+      rangeError(from, to) ??
+      runTool((c) => c.getSchedule({ from, to, include_completed, client_id })),
+  );
+
+  server.registerTool(
+    "search_exercise_library",
+    {
+      title: "Search exercise library",
+      description: `Search Lyfta's full exercise catalogue, including exercises the user has never performed (list_exercises only returns performed ones). Use to find an exercise_id for a new template. Paginated by limit/offset; check data.pagination.hasMore. ${RATE}`,
+      inputSchema: {
+        search: z.string().optional().describe("Name search text"),
+        limit: z.number().int().min(1).optional(),
+        offset: z.number().int().min(0).optional(),
+      },
+    },
+    async ({ search, limit, offset }) =>
+      runTool((c) => c.searchExerciseLibrary({ search, limit, offset })),
   );
 
   server.registerTool(
