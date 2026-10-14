@@ -20,6 +20,17 @@ export interface LyftaClientOptions {
 type Query = Record<string, string | number | undefined>;
 
 /**
+ * Encode an id for use as one path segment. Empty, "." and ".." are rejected:
+ * URL resolution would collapse them and silently hit a different endpoint.
+ */
+function pathSegment(id: string): string {
+  if (id === "" || id === "." || id === "..") {
+    throw new LyftaApiError(400, `Invalid id: ${JSON.stringify(id)}`);
+  }
+  return encodeURIComponent(id);
+}
+
+/**
  * Thin typed wrapper over the Lyfta Community REST API. Constructed with a key;
  * the key is sent as a Bearer header and never logged.
  */
@@ -112,6 +123,22 @@ export class LyftaClient {
 
   getExerciseProgress(q: { exercise_id: string; duration: number }) {
     return this.request("GET", "/api/v1/exercises/progress", { query: q });
+  }
+
+  listCollections(q: { page?: number; limit?: number; client_id?: string } = {}) {
+    return this.request("GET", "/api/v1/collections", { query: q });
+  }
+
+  async getCollection(id: string, q: { view?: "summary" | "full"; client_id?: string } = {}) {
+    return this.request("GET", `/api/v1/collections/${pathSegment(id)}`, { query: q });
+  }
+
+  listTemplates(q: { page?: number; limit?: number; client_id?: string } = {}) {
+    return this.request("GET", "/api/v1/templates", { query: q });
+  }
+
+  async getTemplate(id: string, q: { client_id?: string } = {}) {
+    return this.request("GET", `/api/v1/templates/${pathSegment(id)}`, { query: q });
   }
 
   listClients() {

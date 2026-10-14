@@ -72,3 +72,68 @@ describe("LyftaClient", () => {
     await expect(client.listExercises()).rejects.toMatchObject({ status: 408 });
   });
 });
+
+describe("LyftaClient read endpoints", () => {
+  function setup() {
+    const fetchImpl = mockFetch(200, { status: true });
+    const client = new LyftaClient("k", { baseUrl: "https://api.test", fetchImpl });
+    const url = () => String(fetchImpl.mock.calls[0][0]);
+    return { client, fetchImpl, url };
+  }
+
+  it("listCollections sends page, limit, client_id", async () => {
+    const { client, url } = setup();
+    await client.listCollections({ page: 2, limit: 5, client_id: "c1" });
+    expect(url()).toBe("https://api.test/api/v1/collections?page=2&limit=5&client_id=c1");
+  });
+
+  it("listCollections with no args has no query string", async () => {
+    const { client, url } = setup();
+    await client.listCollections();
+    expect(url()).toBe("https://api.test/api/v1/collections");
+  });
+
+  it("getCollection encodes the id and sends view/client_id", async () => {
+    const { client, fetchImpl, url } = setup();
+    await client.getCollection("a/b c", { view: "full", client_id: "c1" });
+    expect(url()).toBe("https://api.test/api/v1/collections/a%2Fb%20c?view=full&client_id=c1");
+    expect((fetchImpl.mock.calls[0][1] as RequestInit).method).toBe("GET");
+  });
+
+  it("getCollection omits undefined params", async () => {
+    const { client, url } = setup();
+    await client.getCollection("7", { view: undefined, client_id: undefined });
+    expect(url()).toBe("https://api.test/api/v1/collections/7");
+  });
+
+  it("encodes path-traversal-looking ids instead of resolving them", async () => {
+    const { client, url } = setup();
+    await client.getCollection("../clients");
+    expect(url()).toBe("https://api.test/api/v1/collections/..%2Fclients");
+  });
+
+  it.each(["", ".", ".."])("rejects id %j without calling fetch", async (id) => {
+    const { client, fetchImpl } = setup();
+    await expect(client.getCollection(id)).rejects.toMatchObject({ status: 400 });
+    await expect(client.getTemplate(id)).rejects.toMatchObject({ status: 400 });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("listTemplates sends page, limit, client_id and omits undefined", async () => {
+    const { client, url } = setup();
+    await client.listTemplates({ limit: 3, client_id: undefined });
+    expect(url()).toBe("https://api.test/api/v1/templates?limit=3");
+  });
+
+  it("getTemplate encodes the id and sends client_id", async () => {
+    const { client, url } = setup();
+    await client.getTemplate("a/b c", { client_id: "c 1" });
+    expect(url()).toBe("https://api.test/api/v1/templates/a%2Fb%20c?client_id=c+1");
+  });
+
+  it("getTemplate with no options has no query string", async () => {
+    const { client, url } = setup();
+    await client.getTemplate("42");
+    expect(url()).toBe("https://api.test/api/v1/templates/42");
+  });
+});

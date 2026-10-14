@@ -126,6 +126,63 @@ export function createServer(): McpServer {
   );
 
   server.registerTool(
+    "list_collections",
+    {
+      title: "List collections/programs",
+      description: `The user's programs (collections) with their workout_ids, paginated. Use to find a program's id, then get_collection for its workouts. ${RATE}`,
+      inputSchema: {
+        page: z.number().int().min(1).optional(),
+        limit: z.number().int().min(1).optional(),
+        client_id: z.string().optional().describe("coach only"),
+      },
+    },
+    async ({ page, limit, client_id }) =>
+      runTool((c) => c.listCollections({ page, limit, client_id })),
+  );
+
+  server.registerTool(
+    "get_collection",
+    {
+      title: "Get collection/program",
+      description: `One program (collection) and its workouts. view "summary" (default) lists the workouts; view "full" includes every workout's exercises and sets — large, use only when you need them all at once. ${RATE}`,
+      inputSchema: {
+        id: z.string().min(1).describe("Collection id (string)"),
+        view: z.enum(["summary", "full"]).optional(),
+        client_id: z.string().optional().describe("coach only"),
+      },
+    },
+    async ({ id, view, client_id }) => runTool((c) => c.getCollection(id, { view, client_id })),
+  );
+
+  server.registerTool(
+    "list_templates",
+    {
+      title: "List workout templates",
+      description: `The user's workout templates (routines) with exercise_count and owning collection, paginated. Use to find a routine's id, then get_template for its exercises and sets. ${RATE}`,
+      inputSchema: {
+        page: z.number().int().min(1).optional(),
+        limit: z.number().int().min(1).optional(),
+        client_id: z.string().optional().describe("coach only"),
+      },
+    },
+    async ({ page, limit, client_id }) =>
+      runTool((c) => c.listTemplates({ page, limit, client_id })),
+  );
+
+  server.registerTool(
+    "get_template",
+    {
+      title: "Get workout template",
+      description: `One workout template (routine) with its exercises and planned sets (set_type_id, reps, weight). The field "excercise_name" is spelled that way by Lyfta. ${RATE}`,
+      inputSchema: {
+        id: z.string().min(1).describe("Template id (string)"),
+        client_id: z.string().optional().describe("coach only"),
+      },
+    },
+    async ({ id, client_id }) => runTool((c) => c.getTemplate(id, { client_id })),
+  );
+
+  server.registerTool(
     "list_clients",
     {
       title: "List coaching clients",
