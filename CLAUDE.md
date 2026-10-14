@@ -1,9 +1,11 @@
 # CLAUDE.md — fork of jkronlachner/lyfta-mcp
 
 Aleks's fork (`aleksandrsivanovs/lyfta-mcp`) of an MCP server for the Lyfta Community API.
-Background lives in **`CONTEXT.md`**: endpoint coverage, response shapes, API quirks, what has
-been confirmed live, and why the code does what it does. Read it before changing tools or
-the client.
+Background lives in `CONTEXT.md`: endpoint coverage, response shapes, API quirks, what has
+been confirmed live, and why the code does what it does. It is imported here so it loads every
+session:
+
+@CONTEXT.md
 
 ## Code conventions
 
