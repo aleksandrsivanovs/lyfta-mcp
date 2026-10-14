@@ -109,19 +109,21 @@ export class LyftaClient {
     return json;
   }
 
-  listWorkouts(q: { page?: number; limit?: number } = {}) {
+  listWorkouts(
+    q: { page?: number; limit?: number; from?: string; to?: string; client_id?: string } = {},
+  ) {
     return this.request("GET", "/api/v1/workouts", { query: q });
   }
 
-  listWorkoutSummaries(q: { page?: number; limit?: number } = {}) {
+  listWorkoutSummaries(q: { page?: number; limit?: number; client_id?: string } = {}) {
     return this.request("GET", "/api/v1/workouts/summary", { query: q });
   }
 
-  listExercises() {
-    return this.request("GET", "/api/v1/exercises");
+  listExercises(q: { client_id?: string } = {}) {
+    return this.request("GET", "/api/v1/exercises", { query: q });
   }
 
-  getExerciseProgress(q: { exercise_id: string; duration: number }) {
+  getExerciseProgress(q: { exercise_id: string; duration: number; client_id?: string }) {
     return this.request("GET", "/api/v1/exercises/progress", { query: q });
   }
 

@@ -196,4 +196,46 @@ describe("LyftaClient read endpoints", () => {
       message: "library down",
     });
   });
+
+  it("listWorkouts sends from, to, client_id alongside pagination", async () => {
+    const { client, url } = setup();
+    await client.listWorkouts({
+      page: 1,
+      limit: 10,
+      from: "2026-09-01",
+      to: "2026-09-08",
+      client_id: "c1",
+    });
+    expect(url()).toBe(
+      "https://api.test/api/v1/workouts?page=1&limit=10&from=2026-09-01&to=2026-09-08&client_id=c1",
+    );
+  });
+
+  it("listWorkoutSummaries sends client_id", async () => {
+    const { client, url } = setup();
+    await client.listWorkoutSummaries({ client_id: "c1" });
+    expect(url()).toBe("https://api.test/api/v1/workouts/summary?client_id=c1");
+  });
+
+  it("listExercises sends client_id and keeps a bare URL without it", async () => {
+    const { client, fetchImpl } = setup();
+    await client.listExercises({ client_id: "c1" });
+    await client.listExercises();
+    expect(String(fetchImpl.mock.calls[0][0])).toBe(
+      "https://api.test/api/v1/exercises?client_id=c1",
+    );
+    expect(String(fetchImpl.mock.calls[1][0])).toBe("https://api.test/api/v1/exercises");
+  });
+
+  it("getExerciseProgress sends client_id and omits it when undefined", async () => {
+    const { client, fetchImpl } = setup();
+    await client.getExerciseProgress({ exercise_id: "3", duration: 30, client_id: "c1" });
+    await client.getExerciseProgress({ exercise_id: "3", duration: 30 });
+    expect(String(fetchImpl.mock.calls[0][0])).toBe(
+      "https://api.test/api/v1/exercises/progress?exercise_id=3&duration=30&client_id=c1",
+    );
+    expect(String(fetchImpl.mock.calls[1][0])).toBe(
+      "https://api.test/api/v1/exercises/progress?exercise_id=3&duration=30",
+    );
+  });
 });

@@ -255,4 +255,62 @@ describe("server tools", () => {
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("library down");
   });
+
+  it("list_workouts forwards the date range and client_id", async () => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    const res: any = await client.callTool({
+      name: "list_workouts",
+      arguments: { limit: 5, from: "2026-09-01", to: "2026-09-08", client_id: "c1" },
+    });
+    expect(res.isError).toBeFalsy();
+    expect(fetchedUrl(fetchFn)).toBe(
+      "https://my.lyfta.app/api/v1/workouts?limit=5&from=2026-09-01&to=2026-09-08&client_id=c1",
+    );
+  });
+
+  it("list_workouts accepts a one-sided range", async () => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    await client.callTool({ name: "list_workouts", arguments: { to: "2026-09-08" } });
+    expect(fetchedUrl(fetchFn)).toBe("https://my.lyfta.app/api/v1/workouts?to=2026-09-08");
+  });
+
+  it.each(["2026/09/01", "2026-02-30", "yesterday"])(
+    "list_workouts rejects invalid date %s without calling fetch",
+    async (to) => {
+      const fetchFn = stubFetch();
+      const client = await connect();
+      const res: any = await client.callTool({ name: "list_workouts", arguments: { to } });
+      expect(res.isError).toBe(true);
+      expect(fetchFn).not.toHaveBeenCalled();
+    },
+  );
+
+  it("list_workouts rejects from > to without calling fetch", async () => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    const res: any = await client.callTool({
+      name: "list_workouts",
+      arguments: { from: "2026-10-01", to: "2026-09-30" },
+    });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("must not be after");
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["list_workout_summaries", {}, "/api/v1/workouts/summary?client_id=c1"],
+    ["list_exercises", {}, "/api/v1/exercises?client_id=c1"],
+    [
+      "get_exercise_progress",
+      { exercise_id: "3", duration: 30 },
+      "/api/v1/exercises/progress?exercise_id=3&duration=30&client_id=c1",
+    ],
+  ])("%s forwards client_id", async (name, args, path) => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    await client.callTool({ name, arguments: { ...args, client_id: "c1" } });
+    expect(fetchedUrl(fetchFn)).toBe(`https://my.lyfta.app${path}`);
+  });
 });

@@ -107,13 +107,18 @@ export function createServer(): McpServer {
     "list_workouts",
     {
       title: "List workouts",
-      description: `Detailed workouts including exercises and sets, paginated (limit max 100). ${RATE}`,
+      description: `Detailed completed workouts including exercises and sets, paginated (limit max 100). Optionally filter by from/to (YYYY-MM-DD, UTC, inclusive). ${RATE}`,
       inputSchema: {
         page: z.number().int().min(1).optional(),
         limit: z.number().int().min(1).max(100).optional(),
+        from: dateSchema().optional().describe("Start date YYYY-MM-DD (UTC, inclusive)"),
+        to: dateSchema().optional().describe("End date YYYY-MM-DD (UTC, inclusive)"),
+        client_id: z.string().optional().describe("coach only"),
       },
     },
-    async ({ page, limit }) => runTool((c) => c.listWorkouts({ page, limit })),
+    async ({ page, limit, from, to, client_id }) =>
+      rangeError(from, to) ??
+      runTool((c) => c.listWorkouts({ page, limit, from, to, client_id })),
   );
 
   server.registerTool(
@@ -124,19 +129,23 @@ export function createServer(): McpServer {
       inputSchema: {
         page: z.number().int().min(1).optional(),
         limit: z.number().int().min(1).max(1000).optional(),
+        client_id: z.string().optional().describe("coach only"),
       },
     },
-    async ({ page, limit }) => runTool((c) => c.listWorkoutSummaries({ page, limit })),
+    async ({ page, limit, client_id }) =>
+      runTool((c) => c.listWorkoutSummaries({ page, limit, client_id })),
   );
 
   server.registerTool(
     "list_exercises",
     {
       title: "List performed exercises",
-      description: `Catalog of exercises the user has performed. Note: equipment/body-part/muscle IDs are returned as JSON-stringified arrays. ${RATE}`,
-      inputSchema: {},
+      description: `Catalog of exercises the user has performed (for the full catalogue use search_exercise_library). Note: equipment/body-part/muscle IDs are returned as JSON-stringified arrays. ${RATE}`,
+      inputSchema: {
+        client_id: z.string().optional().describe("coach only"),
+      },
     },
-    async () => runTool((c) => c.listExercises()),
+    async ({ client_id }) => runTool((c) => c.listExercises({ client_id })),
   );
 
   server.registerTool(
@@ -147,10 +156,11 @@ export function createServer(): McpServer {
       inputSchema: {
         exercise_id: z.string().describe("Exercise id (string)"),
         duration: z.number().int().min(1).describe("Look-back window in days"),
+        client_id: z.string().optional().describe("coach only"),
       },
     },
-    async ({ exercise_id, duration }) =>
-      runTool((c) => c.getExerciseProgress({ exercise_id, duration })),
+    async ({ exercise_id, duration, client_id }) =>
+      runTool((c) => c.getExerciseProgress({ exercise_id, duration, client_id })),
   );
 
   server.registerTool(
