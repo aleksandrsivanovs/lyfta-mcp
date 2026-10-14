@@ -28,6 +28,13 @@ describe("LyftaClient", () => {
     expect(String(fetchImpl.mock.calls[0][0])).toBe("https://api.test/api/v1/workouts?limit=10");
   });
 
+  it("omits empty-string query params", async () => {
+    const fetchImpl = mockFetch(200, { status: true });
+    const client = new LyftaClient("k", { baseUrl: "https://api.test", fetchImpl });
+    await client.listTemplates({ client_id: "", limit: 2 });
+    expect(String(fetchImpl.mock.calls[0][0])).toBe("https://api.test/api/v1/templates?limit=2");
+  });
+
   it("sends JSON body for POST", async () => {
     const fetchImpl = mockFetch(200, { status: true, id: "1" });
     const client = new LyftaClient("k", { baseUrl: "https://api.test", fetchImpl });

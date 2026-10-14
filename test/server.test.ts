@@ -329,4 +329,11 @@ describe("server tools", () => {
       expect(t.annotations?.readOnlyHint, t.name).toBeUndefined();
     }
   });
+
+  it("treats an empty client_id as not given", async () => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    await client.callTool({ name: "list_exercises", arguments: { client_id: "" } });
+    expect(fetchedUrl(fetchFn)).toBe("https://my.lyfta.app/api/v1/exercises");
+  });
 });

@@ -56,7 +56,8 @@ export class LyftaClient {
     const url = new URL(path, this.baseUrl);
     if (opts.query) {
       for (const [k, v] of Object.entries(opts.query)) {
-        if (v !== undefined) url.searchParams.set(k, String(v));
+        // "" too: an empty client_id/search means "not given", not "match empty".
+        if (v !== undefined && v !== "") url.searchParams.set(k, String(v));
       }
     }
 
