@@ -195,6 +195,24 @@ describe("server tools", () => {
     );
   });
 
+  it.each([
+    ["list_collections", { limit: 0 }],
+    ["list_collections", { page: 0 }],
+    ["list_collections", { limit: 1.5 }],
+    ["list_templates", { limit: 0 }],
+    ["list_templates", { page: 0 }],
+    ["search_exercise_library", { limit: 0 }],
+    ["search_exercise_library", { offset: -1 }],
+    ["list_workouts", { limit: 101 }],
+    ["list_workout_summaries", { limit: 1001 }],
+  ])("%s rejects out-of-range %j without calling fetch", async (name, args) => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    const res: any = await client.callTool({ name, arguments: args });
+    expect(res.isError).toBe(true);
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
   it("get_schedule forwards dates, flag and client_id", async () => {
     const fetchFn = stubFetch({ status: true, workouts: [] });
     const client = await connect();
