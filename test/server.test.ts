@@ -33,9 +33,15 @@ function fetchedUrl(fn: ReturnType<typeof stubFetch>) {
 }
 
 describe("server tools", () => {
-  beforeEach(() => setDefaultKey("test-key"));
+  beforeEach(() => {
+    setDefaultKey("test-key");
+    // URL assertions below expect the default host; a LYFTA_BASE_URL left in
+    // the shell (e.g. for the smoke script) would otherwise break them.
+    vi.stubEnv("LYFTA_BASE_URL", undefined);
+  });
   afterEach(() => {
     globalThis.fetch = realFetch;
+    vi.unstubAllEnvs();
   });
 
   it("exposes all 13 tools", async () => {
