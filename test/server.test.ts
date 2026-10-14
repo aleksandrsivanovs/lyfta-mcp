@@ -143,6 +143,22 @@ describe("server tools", () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["get_template", "."],
+    ["get_template", ".."],
+    ["get_collection", "."],
+    ["get_collection", ".."],
+  ])("%s rejects id %j locally without calling fetch", async (name, id) => {
+    const fetchFn = stubFetch();
+    const client = await connect();
+    const res: any = await client.callTool({ name, arguments: { id } });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("Invalid id");
+    // A local check, so it must not read as if Lyfta rejected the request.
+    expect(res.content[0].text).not.toContain("Lyfta API error");
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
   it("get_collection forwards view and client_id", async () => {
     const fetchFn = stubFetch();
     const client = await connect();

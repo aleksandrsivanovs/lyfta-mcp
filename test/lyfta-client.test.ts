@@ -121,8 +121,8 @@ describe("LyftaClient read endpoints", () => {
 
   it.each(["", ".", ".."])("rejects id %j without calling fetch", async (id) => {
     const { client, fetchImpl } = setup();
-    await expect(client.getCollection(id)).rejects.toMatchObject({ status: 400 });
-    await expect(client.getTemplate(id)).rejects.toMatchObject({ status: 400 });
+    await expect(client.getCollection(id)).rejects.toThrow("Invalid id");
+    await expect(client.getTemplate(id)).rejects.toThrow("Invalid id");
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 

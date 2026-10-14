@@ -22,10 +22,11 @@ type Query = Record<string, string | number | undefined>;
 /**
  * Encode an id for use as one path segment. Empty, "." and ".." are rejected:
  * URL resolution would collapse them and silently hit a different endpoint.
+ * A plain Error, not LyftaApiError: Lyfta never saw the request.
  */
 function pathSegment(id: string): string {
   if (id === "" || id === "." || id === "..") {
-    throw new LyftaApiError(400, `Invalid id: ${JSON.stringify(id)}`);
+    throw new Error(`Invalid id: ${JSON.stringify(id)}`);
   }
   return encodeURIComponent(id);
 }
@@ -132,6 +133,7 @@ export class LyftaClient {
     return this.request("GET", "/api/v1/collections", { query: q });
   }
 
+  // async so a bad id from pathSegment() rejects like an API error, not a sync throw.
   async getCollection(id: string, q: { view?: "summary" | "full"; client_id?: string } = {}) {
     return this.request("GET", `/api/v1/collections/${pathSegment(id)}`, { query: q });
   }
@@ -140,6 +142,7 @@ export class LyftaClient {
     return this.request("GET", "/api/v1/templates", { query: q });
   }
 
+  // async: see getCollection.
   async getTemplate(id: string, q: { client_id?: string } = {}) {
     return this.request("GET", `/api/v1/templates/${pathSegment(id)}`, { query: q });
   }
