@@ -313,4 +313,20 @@ describe("server tools", () => {
     await client.callTool({ name, arguments: { ...args, client_id: "c1" } });
     expect(fetchedUrl(fetchFn)).toBe(`https://my.lyfta.app${path}`);
   });
+
+  it("marks every GET tool readOnlyHint and leaves create_* unannotated", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const readOnly = tools.filter((t) => t.annotations?.readOnlyHint === true).map((t) => t.name);
+    expect(readOnly.sort()).toEqual(
+      tools
+        .map((t) => t.name)
+        .filter((n) => !n.startsWith("create_"))
+        .sort(),
+    );
+    expect(readOnly).toHaveLength(11);
+    for (const t of tools.filter((t) => t.name.startsWith("create_"))) {
+      expect(t.annotations?.readOnlyHint, t.name).toBeUndefined();
+    }
+  });
 });

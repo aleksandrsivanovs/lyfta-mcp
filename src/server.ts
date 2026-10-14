@@ -115,6 +115,7 @@ export function createServer(): McpServer {
         to: dateSchema().optional().describe("End date YYYY-MM-DD (UTC, inclusive)"),
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ page, limit, from, to, client_id }) =>
       rangeError(from, to) ??
@@ -131,6 +132,7 @@ export function createServer(): McpServer {
         limit: z.number().int().min(1).max(1000).optional(),
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ page, limit, client_id }) =>
       runTool((c) => c.listWorkoutSummaries({ page, limit, client_id })),
@@ -144,6 +146,7 @@ export function createServer(): McpServer {
       inputSchema: {
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ client_id }) => runTool((c) => c.listExercises({ client_id })),
   );
@@ -158,6 +161,7 @@ export function createServer(): McpServer {
         duration: z.number().int().min(1).describe("Look-back window in days"),
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ exercise_id, duration, client_id }) =>
       runTool((c) => c.getExerciseProgress({ exercise_id, duration, client_id })),
@@ -173,6 +177,7 @@ export function createServer(): McpServer {
         limit: z.number().int().min(1).optional(),
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ page, limit, client_id }) =>
       runTool((c) => c.listCollections({ page, limit, client_id })),
@@ -188,6 +193,7 @@ export function createServer(): McpServer {
         view: z.enum(["summary", "full"]).optional(),
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ id, view, client_id }) => runTool((c) => c.getCollection(id, { view, client_id })),
   );
@@ -202,6 +208,7 @@ export function createServer(): McpServer {
         limit: z.number().int().min(1).optional(),
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ page, limit, client_id }) =>
       runTool((c) => c.listTemplates({ page, limit, client_id })),
@@ -216,6 +223,7 @@ export function createServer(): McpServer {
         id: z.string().min(1).describe("Template id (string)"),
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ id, client_id }) => runTool((c) => c.getTemplate(id, { client_id })),
   );
@@ -231,6 +239,7 @@ export function createServer(): McpServer {
         include_completed: z.boolean().optional().describe("Also return completed entries"),
         client_id: z.string().optional().describe("coach only"),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ from, to, include_completed, client_id }) =>
       rangeError(from, to) ??
@@ -247,6 +256,7 @@ export function createServer(): McpServer {
         limit: z.number().int().min(1).optional(),
         offset: z.number().int().min(0).optional(),
       },
+      annotations: { readOnlyHint: true },
     },
     async ({ search, limit, offset }) =>
       runTool((c) => c.searchExerciseLibrary({ search, limit, offset })),
@@ -258,6 +268,7 @@ export function createServer(): McpServer {
       title: "List coaching clients",
       description: `Coach API: active coaching clients. Errors if the account is not a coach. ${RATE}`,
       inputSchema: {},
+      annotations: { readOnlyHint: true },
     },
     async () => runTool((c) => c.listClients()),
   );
