@@ -8,9 +8,20 @@ Facts about this fork and the Lyfta API. How to work in the repo lives in `CLAUD
 Lyfta Community API. It is used as a fitness-coaching data source: an MCP client reads the user's
 training data and plans, and can create programs and templates.
 
-The upstream server (v0.3.1) wrapped 7 endpoints. The fork adds the remaining read endpoints
-(PR #1 on the fork). Its design spec, including the Non-Goals, is in
+The upstream server (v0.3.1) wrapped 7 endpoints. The fork adds the remaining read endpoints.
+Its design spec, including the Non-Goals, is in
 `docs/superpowers/specs/2026-06-15-lyfta-mcp-design.md`.
+
+## Status (2026-10-14)
+
+- **Fork:** the read endpoints were squash-merged into `main` (PR #1, commit `61c04e5`). That
+  build is deployed and has been confirmed working from Claude Desktop.
+- **Upstream:** the same changes, minus the fork-only files (`CLAUDE.md`, `CONTEXT.md` and a
+  lockfile sync), are open as https://github.com/jkronlachner/lyfta-mcp/pull/11 from the fork's
+  `feat/read-endpoints` branch. Keep that branch until the PR is merged or closed, and push any
+  requested changes to it. Once it merges, resync the fork's `main` with upstream.
+- **Open:** the fork's history still contains an early commit with local setup details
+  (`db6005f`). Removing it requires a history rewrite that the user hasn't authorised yet.
 
 ## API sources
 
