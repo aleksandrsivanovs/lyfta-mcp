@@ -46,6 +46,14 @@ const dateSchema = () =>
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
     .refine(isCalendarDate, "Date is not a real calendar day");
 
+// Per Lyfta's spec client_id is lyfta.coach.public_id; the hint steers an LLM
+// to list_clients instead of guessing a name or numeric user id.
+const clientIdSchema = () =>
+  z
+    .string()
+    .optional()
+    .describe("Coach only: a client's id from list_clients (public_id, not the numeric user id)");
+
 /**
  * Lyfta answers from > to with a 400; catch it here to save a request.
  * inputSchema is a raw shape, so this cross-field check can't live in zod.
@@ -113,7 +121,7 @@ export function createServer(): McpServer {
         limit: z.number().int().min(1).max(100).optional(),
         from: dateSchema().optional().describe("Start date YYYY-MM-DD (UTC, inclusive)"),
         to: dateSchema().optional().describe("End date YYYY-MM-DD (UTC, inclusive)"),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -130,7 +138,7 @@ export function createServer(): McpServer {
       inputSchema: {
         page: z.number().int().min(1).optional(),
         limit: z.number().int().min(1).max(1000).optional(),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -144,7 +152,7 @@ export function createServer(): McpServer {
       title: "List performed exercises",
       description: `Catalog of exercises the user has performed (for the full catalogue use search_exercise_library). Note: equipment/body-part/muscle IDs are returned as JSON-stringified arrays. ${RATE}`,
       inputSchema: {
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -159,7 +167,7 @@ export function createServer(): McpServer {
       inputSchema: {
         exercise_id: z.string().describe("Exercise id (string)"),
         duration: z.number().int().min(1).describe("Look-back window in days"),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -175,7 +183,7 @@ export function createServer(): McpServer {
       inputSchema: {
         page: z.number().int().min(1).optional(),
         limit: z.number().int().min(1).optional(),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -191,7 +199,7 @@ export function createServer(): McpServer {
       inputSchema: {
         id: z.string().min(1).describe("Collection id (string)"),
         view: z.enum(["summary", "full"]).optional(),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -206,7 +214,7 @@ export function createServer(): McpServer {
       inputSchema: {
         page: z.number().int().min(1).optional(),
         limit: z.number().int().min(1).optional(),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -221,7 +229,7 @@ export function createServer(): McpServer {
       description: `One workout template (routine) with its exercises and planned sets (set_type_id, reps, weight). The field "excercise_name" is spelled that way by Lyfta. ${RATE}`,
       inputSchema: {
         id: z.string().min(1).describe("Template id (string)"),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -232,12 +240,12 @@ export function createServer(): McpServer {
     "get_schedule",
     {
       title: "Get planned schedule",
-      description: `Workouts planned on the user's calendar (template_id, scheduled_date/time, status). Use for "what's planned this week"; pass a template_id to get_template for its exercises. from/to are YYYY-MM-DD, UTC, inclusive. Completed entries are excluded unless include_completed is true. ${RATE}`,
+      description: `Workouts planned on the user's calendar (template_id, scheduled_date/time, status). Use for "what's planned this week"; pass a template_id to get_template for its exercises. from/to are YYYY-MM-DD, UTC, inclusive. Without from/to Lyfta returns today through +90 days. Completed entries are excluded unless include_completed is true; for completed workout history use list_workouts. ${RATE}`,
       inputSchema: {
         from: dateSchema().optional().describe("Start date YYYY-MM-DD (UTC, inclusive)"),
         to: dateSchema().optional().describe("End date YYYY-MM-DD (UTC, inclusive)"),
         include_completed: z.boolean().optional().describe("Also return completed entries"),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
       annotations: { readOnlyHint: true },
     },
@@ -283,7 +291,7 @@ export function createServer(): McpServer {
         description: z.string().optional(),
         goal: z.string().optional(),
         image: z.string().optional().describe("base64-encoded image"),
-        client_id: z.string().optional().describe("coach only"),
+        client_id: clientIdSchema(),
       },
     },
     async ({ title, description, goal, image, client_id }) =>

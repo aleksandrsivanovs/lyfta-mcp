@@ -370,6 +370,26 @@ describe("server tools", () => {
     }
   });
 
+  it("get_schedule describes Lyfta's default window and points to list_workouts", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const desc = tools.find((t) => t.name === "get_schedule")?.description ?? "";
+    expect(desc).toContain("+90 days");
+    expect(desc).toContain("list_workouts");
+  });
+
+  it("tells the LLM where every client_id comes from", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const withClientId = tools.filter((t) => (t.inputSchema.properties as any)?.client_id);
+    expect(withClientId.length).toBeGreaterThanOrEqual(10);
+    for (const t of withClientId) {
+      expect((t.inputSchema.properties as any).client_id.description, t.name).toContain(
+        "list_clients",
+      );
+    }
+  });
+
   it("treats an empty client_id as not given", async () => {
     const fetchFn = stubFetch();
     const client = await connect();
