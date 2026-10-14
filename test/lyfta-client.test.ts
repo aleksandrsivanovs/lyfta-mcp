@@ -246,3 +246,30 @@ describe("LyftaClient read endpoints", () => {
     );
   });
 });
+
+describe("LyftaClient upstream failures", () => {
+  it("reports a non-JSON body with its HTTP status, truncated", async () => {
+    const html = `<html>${"x".repeat(500)}</html>`;
+    const fetchImpl = mockFetch(502, html);
+    const client = new LyftaClient("k", { baseUrl: "https://api.test", fetchImpl });
+    const err = await client.listTemplates().catch((e) => e);
+    expect(err).toMatchObject({ name: "LyftaApiError", status: 502 });
+    expect(err.message).toContain("non-JSON (HTTP 502)");
+    expect(err.message).toContain(html.slice(0, 200));
+    expect(err.message).not.toContain(html.slice(0, 201));
+  });
+
+  it("treats an empty 200 body as an empty result, not an error", async () => {
+    const fetchImpl = mockFetch(200, "");
+    const client = new LyftaClient("k", { baseUrl: "https://api.test", fetchImpl });
+    await expect(client.getSchedule()).resolves.toEqual({});
+  });
+
+  it("rethrows a network failure as-is instead of calling it a timeout", async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError("fetch failed");
+    });
+    const client = new LyftaClient("k", { baseUrl: "https://api.test", fetchImpl });
+    await expect(client.listCollections()).rejects.toThrow(TypeError);
+  });
+});

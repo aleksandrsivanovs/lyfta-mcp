@@ -473,4 +473,34 @@ describe("server tools", () => {
     expect(res.isError).toBe(true);
     expect(fetchFn).not.toHaveBeenCalled();
   });
+
+  it("surfaces a 429 with its retry-after hint", async () => {
+    globalThis.fetch = vi.fn(
+      async () => new Response("", { status: 429, headers: { "retry-after": "30" } }),
+    ) as any;
+    const client = await connect();
+    const res: any = await client.callTool({ name: "get_schedule", arguments: {} });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toMatch(/^Lyfta API error \(429\): .*\[retry-after: 30\]$/);
+  });
+
+  it("surfaces a non-JSON upstream page as isError with its status", async () => {
+    globalThis.fetch = vi.fn(
+      async () => new Response("<html>Bad gateway</html>", { status: 502 }),
+    ) as any;
+    const client = await connect();
+    const res: any = await client.callTool({ name: "list_templates", arguments: {} });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toContain("Lyfta API error (502)");
+  });
+
+  it("surfaces a network failure as isError instead of crashing the call", async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new TypeError("fetch failed");
+    }) as any;
+    const client = await connect();
+    const res: any = await client.callTool({ name: "list_collections", arguments: {} });
+    expect(res.isError).toBe(true);
+    expect(res.content[0].text).toBe("fetch failed");
+  });
 });
