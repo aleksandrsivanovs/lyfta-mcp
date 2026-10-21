@@ -46,7 +46,10 @@ Conventional Commit. Don't bump the version (release-please handles it upstream)
 
 - The machine-wide git rules apply (PR-only, never merge yourself). PRs go against
   `aleksandrsivanovs/lyfta-mcp`. The no-`main` guard is a local, untracked hook in `.git/hooks/`
-  so the fork adds no hook files that upstream lacks.
+  so the fork adds no hook files that upstream lacks. It refuses `main` and `dev/…`.
+- **No work branches here.** The machine-wide topic workflow (`dev/<topic>`, task PRs merged by
+  Claude) is switched off for this repo, because it needs tracked scripts the fork doesn't carry.
+  Every change, even part of a larger piece of work, is one PR into `main`, merged by the owner.
 - Keep `main` in sync with upstream. PRs to `jkronlachner/lyfta-mcp` carry only generally
   useful changes, never fork-only files (`CLAUDE.md`, `CONTEXT.md`).
 
