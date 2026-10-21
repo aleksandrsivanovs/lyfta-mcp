@@ -44,9 +44,9 @@ Conventional Commit. Don't bump the version (release-please handles it upstream)
 
 ## Git and PRs
 
-- Never commit straight to `main`. Work on a feature branch and open a PR against
-  `aleksandrsivanovs/lyfta-mcp`. Never merge a PR yourself: only Aleks merges, or approves a
-  merge explicitly.
+- The machine-wide git rules apply (PR-only, never merge yourself). PRs go against
+  `aleksandrsivanovs/lyfta-mcp`. The no-`main` guard is a local, untracked hook in `.git/hooks/`
+  so the fork adds no hook files that upstream lacks.
 - Keep `main` in sync with upstream. PRs to `jkronlachner/lyfta-mcp` carry only generally
   useful changes, never fork-only files (`CLAUDE.md`, `CONTEXT.md`).
 
@@ -55,5 +55,5 @@ Conventional Commit. Don't bump the version (release-please handles it upstream)
 - Never log, print, commit, or echo a Lyfta API key. `.env*` is git-ignored — keep it that way.
 - Live API calls only via `npm run smoke`, with a key the user provides in their own shell.
 - Don't add write tools beyond the existing two.
-- Keep anything about the user's local setup (hosts, IPs, ports, paths, container names) out
-  of repo files, commits and PR text.
+- **This repo is public** (so is upstream): keep anything about the user's local setup (hosts,
+  IPs, ports, paths, container names) out of repo files, commits and PR text.
