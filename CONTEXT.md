@@ -12,10 +12,11 @@ The upstream server (v0.3.1) wrapped 7 endpoints. The fork adds the remaining re
 Its design spec, including the Non-Goals, is in
 `docs/superpowers/specs/2026-06-15-lyfta-mcp-design.md`.
 
-## Status (2026-10-14)
+## Status (2026-10-27)
 
-- **Fork:** the read endpoints were squash-merged into `main` (PR #1, commit `61c04e5`). That
-  build is deployed and has been confirmed working from Claude Desktop.
+- **Fork:** the read endpoints were squash-merged into `main` (PR #1, commit `61c04e5`) and
+  confirmed working from Claude Desktop. The deployed build is now `54e9011` (PR #5: the Docker
+  image pins Node 22.23.4 for CVE-2026-111497), checked with `/healthz` and `node -v` on 2026-10-27.
 - **Upstream:** the same changes, minus the fork-only files (`CLAUDE.md`, `CONTEXT.md` and a
   lockfile sync), are open as https://github.com/jkronlachner/lyfta-mcp/pull/11 from the fork's
   `feat/read-endpoints` branch. Keep that branch until the PR is merged or closed, and push any
